@@ -121,14 +121,18 @@ public:
     class TProcessor_lambda;
     class TProcessor_function;
     class TProcessor_plain;
+    class TProcessor_new;
     class TProcessor_var;
     class TProcessor_arg;
+    class TProcessor_cast;
     class TProcessor_comma;
     class TProcessor_asm;
     class TProcessor_constexpr;
     class TProcessor_rawasm;
+    class TProcessor_deref;
     class TProcessor_cond;
     class TProcessor_eq;
+    class TProcessor_let;
     class TProcessor_less;
     class TProcessor_lesseq;
     class TProcessor_greater;
@@ -154,6 +158,8 @@ protected:
     unordered_map<string, TFunction> symbol_table;
     unordered_map<string, TProcessor *> keyword_vtable;
     unordered_map<string, TState> static_def_list;
+    unordered_map<string, string> var_table;
+    deque<Package> initializer_stack;
     deque<TSeq_arg> arg_stack;
     deque<TPro_table> arg_symbol_stack;
 public:
@@ -169,14 +175,18 @@ public:
     DEF(TProcessor_lambda);
     DEF(TProcessor_function);
     DEF(TProcessor_plain);
+    DEF(TProcessor_new);
     DEF(TProcessor_var);
     DEF(TProcessor_constexpr);
     DEF(TProcessor_arg);
     DEF(TProcessor_asm);
+    DEF(TProcessor_deref);
+    DEF(TProcessor_cast);
     DEF(TProcessor_rawasm);
     DEF(TProcessor_comma);
     DEF(TProcessor_cond);
     DEF(TProcessor_eq);
+    DEF(TProcessor_let);
     DEF(TProcessor_less);
     DEF(TProcessor_lesseq);
     DEF(TProcessor_greater);

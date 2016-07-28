@@ -45,7 +45,7 @@ Package TParser :: TProcessor_def :: proc(int & pos, deque<TScanner :: TToken> &
     Encoder.encode_func(TFunction(title.code_seg -> title, content.code_seg -> l, content.code_seg -> r));
     return Package(0);
 }
-Package TParser :: TProcessor_var :: proc(int & pos, deque<TScanner :: TToken> & lexemes)
+Package TParser :: TProcessor_new :: proc(int & pos, deque<TScanner :: TToken> & lexemes)
 {
     Package next;
     if (pos >= lexemes.size())
@@ -66,6 +66,26 @@ Package TParser :: TProcessor_var :: proc(int & pos, deque<TScanner :: TToken> &
     }
     return Package(0);
 }
+Package TParser :: TProcessor_deref :: proc(int &pos, deque<TScanner::TToken> &lexemes)
+{
+    Package label;
+    if (pos >= lexemes.size())
+        return Package();
+    label = Parser.execute(pos);
+    Parser.execute(pos);
+    return Package("[" + label.code_seg -> title + "]", 0, 0);
+}
+Package TParser :: TProcessor_cast :: proc(int &pos, deque<TScanner::TToken> &lexemes)
+{
+    Package type, target;
+    if (pos >= lexemes.size())
+        return Package();
+    type = Parser.execute(pos);
+    target = Parser.execute(pos);
+    Parser.execute(pos);
+    return Package(type.code_seg -> title + " " + target.code_seg -> title, 0, 0);
+}
+
 Package TParser :: TProcessor_constexpr :: proc(int &pos, deque<TScanner::TToken> &lexemes)
 {
     Package title;
@@ -99,6 +119,63 @@ Package TParser :: TProcessor_comma :: proc(int & pos, deque<TScanner :: TToken>
     Encoder.nextln();
     return Package(0);
 }
+Package TParser :: TProcessor_let :: proc(int &pos, deque<TScanner::TToken> &lexemes)
+{
+    Package id, itv;
+    int p = Parser.initializer_stack.size();
+    id = Parser.execute(pos);
+    itv = Parser.execute(pos);
+    Parser.execute(pos);
+    Parser.initializer_stack.push_back(std::move(itv));
+    return Package(id.code_seg -> title, -1, p);
+}
+string get_type_instr(const string & title)
+{
+    if (title == "byte" || title == "string")
+        return "db";
+    else if (title == "halfword")
+        return "dw";
+    else if (title == "word")
+        return "dd";
+    else
+        Error.message("Fatal : unsupported type " + title + "specified.");
+}
+Package TParser :: TProcessor_var :: proc(int &pos, deque<TScanner::TToken> &lexemes)
+{
+    Package type, id;
+    deque<Package> todo;
+    string title;
+    while (true)
+    {
+        id = Parser.execute(pos);
+        title = id.code_seg -> title;
+        if (id.code_seg -> title == ":")
+            break;
+        todo.push_back(id);
+    }
+    type = Parser.execute(pos);
+    Parser.execute(pos);
+    for (auto i = todo.begin(); i != todo.end(); ++i)
+    {
+        if (Parser.var_table.find(i -> code_seg -> title) != Parser.var_table.end())
+            Error.message("Fatal : Varible " + i -> code_seg -> title + " redefined.");
+        Parser.var_table[i -> code_seg -> title] = type.code_seg -> title;
+        Package init;
+        if (i -> code_seg -> l == -1)
+        {
+            init = Parser.initializer_stack[i -> code_seg -> r];
+        } else {
+            init = Package(0);
+        }
+        Encoder.output_title(i -> code_seg -> title);
+        Encoder.output_title(get_type_instr(type.code_seg -> title));
+        Encoder.output(init);
+        Encoder.nextln();
+    }
+    Parser.initializer_stack.clear();
+    return Package(0);
+}
+
 Package TParser :: TProcessor_asm :: proc(int &pos, deque<TScanner::TToken> &lexemes)
 {
     Package next;

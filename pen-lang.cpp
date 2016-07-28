@@ -391,9 +391,13 @@ TParser :: TParser()
     keyword_vtable["asm"] = new TProcessor_asm();
     keyword_vtable["__asm__"] = new TProcessor_rawasm();
     keyword_vtable["plain"] = new TProcessor_plain();
+    keyword_vtable["new"]   = new TProcessor_new();
     keyword_vtable["var"]   = new TProcessor_var();
     keyword_vtable["comma"] = new TProcessor_comma();
+    keyword_vtable["let"]   = new TProcessor_let();
     keyword_vtable["arg"]   = new TProcessor_arg();
+    keyword_vtable["^"]  = new TProcessor_deref();
+    keyword_vtable["cast"] = new TProcessor_cast();
     keyword_vtable["cond"]  = new TProcessor_cond();
     keyword_vtable["constexpr"] = new TProcessor_constexpr();
     keyword_vtable["?"]     = new TProcessor_cond();
@@ -508,11 +512,17 @@ Package TParser :: execute(int & pos)
             }
         break;
         case TScanner :: id :
+        {
             ++pos;
+            auto title = Scanner.seq_identifier[lst[pos - 1].attribute_value];
+            auto type_dec = var_table.find(title);
+            if (type_dec != var_table.end())
+                return Package(type_dec -> second + " [" + type_dec -> first + "]", 0, 0);
             if (arg_symbol_stack.empty() || arg_symbol_stack[arg_symbol_stack.size() - 1].find(Scanner.seq_identifier[lst[pos - 1].attribute_value]) == arg_symbol_stack[arg_symbol_stack.size() - 1].end())
-                return Package(Scanner.seq_identifier[lst[pos - 1].attribute_value], 0, 0);
+                return Package(title, 0, 0);
             else
                 return get_arg(arg_symbol_stack[arg_symbol_stack.size() - 1][Scanner.seq_identifier[lst[pos - 1].attribute_value]]);
+        }
         break;
         case TScanner :: immediate_int :
             return Package(Scanner.seq_imm_int[lst[pos++].attribute_value]);
