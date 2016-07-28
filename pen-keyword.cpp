@@ -15,6 +15,20 @@ Package TParser :: TProcessor_print :: proc(int & pos, deque<TScanner :: TToken>
     }
     return Package(0);
 }
+Package TParser :: TProcessor_macro :: proc(int & pos, deque<TScanner :: TToken> & lexemes)
+{
+    Package title;
+    Package content;
+    if (pos >= lexemes.size())
+        return Package();
+    title = std :: move(Parser.execute(pos));
+    content = std :: move(Parser.execute(pos));
+    ++pos;
+    if (title.code_seg == NULL || content.code_seg == NULL)
+        Error.message("Invalid arguments specified for <procedure #def#>.");
+    Parser.symbol_table[title.code_seg -> title] = TFunction(title.code_seg -> title, content.code_seg -> l, content.code_seg -> r);
+    return Package(0);
+}
 Package TParser :: TProcessor_def :: proc(int & pos, deque<TScanner :: TToken> & lexemes)
 {
     Package title;
@@ -27,23 +41,87 @@ Package TParser :: TProcessor_def :: proc(int & pos, deque<TScanner :: TToken> &
     if (title.code_seg == NULL || content.code_seg == NULL)
         Error.message("Invalid arguments specified for <procedure #def#>.");
     Parser.symbol_table[title.code_seg -> title] = TFunction(title.code_seg -> title, content.code_seg -> l, content.code_seg -> r);
+    Parser.static_def_list[title.code_seg -> title] = TState();
+    Encoder.encode_func(TFunction(title.code_seg -> title, content.code_seg -> l, content.code_seg -> r));
     return Package(0);
 }
-Package TParser :: TProcessor_static_def :: proc(int & pos, deque<TScanner :: TToken> & lexemes)
+Package TParser :: TProcessor_var :: proc(int & pos, deque<TScanner :: TToken> & lexemes)
 {
-    Package title;
-    Package content;
+    Package next;
     if (pos >= lexemes.size())
         return Package();
-    title = std :: move(Parser.execute(pos));
-    content = std :: move(Parser.execute(pos));
-    ++pos;
-    if (title.code_seg == NULL || content.code_seg == NULL)
-        Error.message("Invalid arguments specified for <procedure #def#>.");
-    Parser.symbol_table[title.code_seg -> title] = TFunction(title.code_seg -> title, content.code_seg -> l, content.code_seg -> r);
-    Parser.static_def_list[title.code_seg -> title] = TState();
+    next = std :: move(Parser.execute(pos));
+    if (next.empty())
+    {
+        Error.message("Too few arguments specified for <procedure #var#>");
+    }
+    Encoder.encode_escchar_output(next.code_seg->title + " ");
+    while (true)
+    {
+        next = std :: move(Parser.execute(pos));
+        if (next.empty())
+        {
+            break;
+        }
+    }
     return Package(0);
 }
+Package TParser :: TProcessor_constexpr :: proc(int &pos, deque<TScanner::TToken> &lexemes)
+{
+    Package title;
+    if (pos >= lexemes.size())
+        return Package();
+    title = Parser.execute(pos);
+    Parser.symbol_table[title.code_seg -> title] = TFunction(title.code_seg -> title, pos, pos + 1);
+    Parser.execute(pos);
+    Parser.execute(pos);
+    return Package(0);
+}
+
+Package TParser :: TProcessor_comma :: proc(int & pos, deque<TScanner :: TToken> & lexemes)
+{
+    Package next;
+    if (pos >= lexemes.size())
+        return Package();
+    bool flag = false;
+    while (true)
+    {
+        next = std :: move(Parser.execute(pos));
+        if (next.empty())
+        {
+            break;
+        }
+        if (flag)
+            Encoder.comma();
+        flag = true;
+        Encoder.output(next);
+    }
+    Encoder.nextln();
+    return Package(0);
+}
+Package TParser :: TProcessor_asm :: proc(int &pos, deque<TScanner::TToken> &lexemes)
+{
+    Package next;
+    if (pos >= lexemes.size())
+        return Package();
+    next = Parser.execute(pos);
+    if (!Parser.execute(pos).empty())
+        Error.message("Too many instruction title specified for <procedure #asm>!");
+    Encoder.output_title(next.code_seg->title);
+    return Package("comma", 0, 0);
+}
+Package TParser :: TProcessor_rawasm :: proc(int &pos, deque<TScanner::TToken> &lexemes)
+{
+    Package next;
+    if (pos >= lexemes.size())
+        return Package();
+    next = Parser.execute(pos);
+    if (!Parser.execute(pos).empty())
+        Error.message("Too many instruction title specified for <procedure #__asm__>!");
+    Encoder.encode_escchar_output(*next.str_val);
+    return Package(0);
+}
+
 Package TParser :: TProcessor_lambda :: proc(int &pos, deque<TScanner::TToken> &lexemes)
 {
     int l = pos;
@@ -83,6 +161,24 @@ Package TParser :: TProcessor_function :: proc(int &pos, deque<TScanner::TToken>
     }
     Parser.arg_symbol_stack.pop_back();
     return copy;
+}
+Package TParser :: TProcessor_plain :: proc(int &pos, deque<TScanner::TToken> &lexemes)
+{
+    Package next;
+    if (pos >= lexemes.size())
+        return Package();
+    bool flag = false;
+    while (true)
+    {
+        next = std :: move(Parser.execute(pos));
+        if (next.empty())
+        {
+            break;
+        }
+        flag = true;
+        Encoder.output(next);
+    }
+    return Package(0);
 }
 
 Package TParser :: TProcessor_arg :: proc(int & pos, deque<TScanner :: TToken> & lexemes)

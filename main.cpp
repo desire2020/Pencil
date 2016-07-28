@@ -1,20 +1,17 @@
 #include <iostream>
 #include "./includes/pen-utility.hpp"
 using namespace std;
-constexpr size_t size = 1800 << 20;
-char p[size];
-
-
 int pos = 0;
 int ret_v;
 int main(int argc, char *argv[])
 {
-//This assembly code expands the system stack space upto 1800MB. x86-64 only.
-    __asm__("MOVQ %0, %%RSP\n" :: "r"(p + size));
     string op;
     ifstream fin;
     if (argc == 1)
     {
+        cout << "Input the assembly code path:";
+        getline(cin, op);
+        Encoder.bind(op);
         while (true)
         {
             getline(cin, op);
@@ -25,6 +22,7 @@ int main(int argc, char *argv[])
         }
     } else {
         fin.open(argv[1], ios :: in);
+        Encoder.bind(argv[2]);
         while (!fin.eof())
         {
             getline(fin, op);
@@ -32,8 +30,7 @@ int main(int argc, char *argv[])
             Scanner.proc_import();
         }
     }
-    Scanner.append("(main)");
- /*   for (size_t i = 0; i < Scanner.lexemes.size(); ++i)
+/*    for (size_t i = 0; i < Scanner.lexemes.size(); ++i)
     {
         cout << "Token #" << i << ":\t" << Scanner.lexemes[i] << endl;
     }
@@ -48,5 +45,6 @@ int main(int argc, char *argv[])
            ret_v = *p;
         else break;
     }
+    Encoder.close();
     exit(ret_v);
 }

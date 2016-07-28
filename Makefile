@@ -5,7 +5,7 @@ _OBJ = pen-lang.o \
 	   pen-interfaces.o \
 	   pen-keyword.o \
 	main.o 
-	
+
 _DEPS = pen-interfaces.hpp \
 		pen-lang.hpp \
 		pen-utility.hpp
@@ -31,7 +31,7 @@ all : pencil
 clean : 
 	@rm -rf $(ODIR)
 
-install : pen
+install : pencil
 	@sudo cp ./pencil /usr/bin/pencil
 
 rebuild : clean pencil

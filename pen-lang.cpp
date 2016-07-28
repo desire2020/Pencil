@@ -75,6 +75,7 @@ long long TScanner :: TToolkit :: val(const std::__cxx11::string &x)
                     }
                 }
             }
+            return ans;
         } else {
             for (int i = 1; i <= x.length() - 1; ++i)
             {
@@ -86,6 +87,7 @@ long long TScanner :: TToolkit :: val(const std::__cxx11::string &x)
                     Error.message("Invalid immediate number \"" + x + "\"");
                 }
             }
+            return ans;
         }
     }
 }
@@ -382,13 +384,18 @@ ostream & operator <<(ostream &fout, const TScanner :: TToken & rhs)
 
 TParser :: TParser()
 {
-    keyword_vtable["print"] = new TProcessor_print();
-    keyword_vtable["def"]   = new TProcessor_def();
-    keyword_vtable["static_def"] = new TProcessor_static_def();
+    keyword_vtable["macro"]   = new TProcessor_macro();
+    keyword_vtable["def"] = new TProcessor_def();
     keyword_vtable["lambda"] = new TProcessor_lambda();
     keyword_vtable["function"] = new TProcessor_function();
+    keyword_vtable["asm"] = new TProcessor_asm();
+    keyword_vtable["__asm__"] = new TProcessor_rawasm();
+    keyword_vtable["plain"] = new TProcessor_plain();
+    keyword_vtable["var"]   = new TProcessor_var();
+    keyword_vtable["comma"] = new TProcessor_comma();
     keyword_vtable["arg"]   = new TProcessor_arg();
     keyword_vtable["cond"]  = new TProcessor_cond();
+    keyword_vtable["constexpr"] = new TProcessor_constexpr();
     keyword_vtable["?"]     = new TProcessor_cond();
     keyword_vtable["<"]     = new TProcessor_less();
     keyword_vtable["<="]    = new TProcessor_lesseq();
@@ -402,6 +409,7 @@ TParser :: TParser()
     keyword_vtable["*"]     = new TProcessor_mul();
     keyword_vtable["/"]     = new TProcessor_div();
     keyword_vtable["link"]  = new TProcessor_link();
+    keyword_vtable["length"] = new TProcessor_length();
     keyword_vtable["substr"] = new TProcessor_substr();
     keyword_vtable["nextInt"] = new TProcessor_nextInt();
     keyword_vtable["nextStr"] = new TProcessor_nextStr();
@@ -478,21 +486,7 @@ Package TParser :: execute(int & pos)
                         y = (in_pending.size() > 1 && in_pending[1].int_val != NULL) ? (*in_pending[1].int_val) : 0;
                         if (is_static)
                         {
-                            if (in_pending[0].int_val != NULL)
-                            {
-                                auto saved_valuex = static_flag -> second.find(*in_pending[0].int_val);
-                                if (saved_valuex != static_flag -> second.end())
-                                {
-                                    auto saved_value = saved_valuex -> second.find(y);
-                                    if (saved_value != saved_valuex -> second.end())
-                                    {
-                                        is_renewable = false;
-                                        ret_p = saved_value -> second;
-                                    }
-                                }
-                            } else {
-                                Error.message("Fatal : A non-staticizeable function is under such a attempt.");
-                            }
+                            ret_p = Package(0);
                         }
                         p = tg -> second.l;
                     } else {
@@ -500,9 +494,10 @@ Package TParser :: execute(int & pos)
                     }
                     if (ret_p.empty())
                         ret_p = execute(p);
-                    if (is_static && is_renewable)
+                    if (is_static)
                     {
-                        static_def_list[title][x][y] = ret_p;
+                        //Encoder.output_arg();
+                        Encoder.call(tmp);
                     }
                     arg_stack.pop_back();
                     return ret_p;
@@ -527,4 +522,82 @@ Package TParser :: execute(int & pos)
         break;
     }
     return Package();
+}
+void TEncoder :: bind(const std::__cxx11::string &path)
+{
+    fout.open(path, std :: ios :: out);
+}
+
+void TEncoder :: call(Package func)
+{
+    fout << "call " << func.code_seg -> title << "\n";
+}
+
+void TEncoder :: output_title(const std::string & title)
+{
+    fout << title << ' ';
+}
+
+void TEncoder :: comma()
+{
+    fout << ',';
+}
+
+void TEncoder :: nextln()
+{
+    fout << '\n';
+}
+
+void TEncoder :: encode_func(TFunction func)
+{
+    fout << func.title << ":\n";
+    Parser.execute(func.l);
+}
+void TEncoder :: encode_escchar_output(const std::string & title)
+{
+    for (int i = 0; i < title.length(); ++i)
+    {
+        switch(title[i])
+        {
+            case '\n':
+                fout << "\\n";
+            break;
+            case '\0':
+                fout << "\\0";
+            break;
+            case '\t':
+                fout << "\\t";
+            break;
+            case '\"':
+                fout << "\\\"";
+            break;
+            case '\\':
+                fout << "\\\\";
+            break;
+            case '\'':
+                fout << "\\\'";
+            break;
+            default:
+                fout << title[i];
+        }
+    }
+}
+
+void TEncoder :: output(Package rhs)
+{
+    if (rhs.int_val != NULL)
+        fout << *rhs.int_val;
+    if (rhs.str_val != NULL)
+    {
+        fout << '\"';
+        encode_escchar_output(*rhs.str_val);
+        fout << '\"';
+    }
+    if (rhs.code_seg != NULL)
+        fout << rhs.code_seg -> title;
+}
+
+void TEncoder :: close()
+{
+    fout.close();
 }

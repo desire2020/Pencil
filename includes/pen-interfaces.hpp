@@ -26,10 +26,12 @@ class TParser;
 class TFile;
 class TError;
 class Package;
+class TEncoder;
 extern TError Error;
 extern TScanner Scanner;
 extern TParser Parser;
 extern TFile File;
+extern TEncoder Encoder;
 
 typedef deque<Package> TSeq_arg;
 typedef pair<int, int> block;

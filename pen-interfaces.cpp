@@ -4,4 +4,4 @@ TError Error;
 TFile File;
 TScanner Scanner;
 TParser Parser;
-
+TEncoder Encoder;

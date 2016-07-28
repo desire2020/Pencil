@@ -3,6 +3,7 @@
 #include "pen-interfaces.hpp"
 #include <fstream>
 using std :: ifstream;
+using std :: ofstream;
 using std :: istream;
 using std :: ostream;
 
@@ -115,11 +116,17 @@ class TParser
 public:
     class TProcessor;
     class TProcessor_print;
+    class TProcessor_macro;
     class TProcessor_def;
-    class TProcessor_static_def;
     class TProcessor_lambda;
     class TProcessor_function;
+    class TProcessor_plain;
+    class TProcessor_var;
     class TProcessor_arg;
+    class TProcessor_comma;
+    class TProcessor_asm;
+    class TProcessor_constexpr;
+    class TProcessor_rawasm;
     class TProcessor_cond;
     class TProcessor_eq;
     class TProcessor_less;
@@ -157,11 +164,17 @@ public:
     };
 
     DEF(TProcessor_print);
+    DEF(TProcessor_macro);
     DEF(TProcessor_def);
-    DEF(TProcessor_static_def);
     DEF(TProcessor_lambda);
     DEF(TProcessor_function);
+    DEF(TProcessor_plain);
+    DEF(TProcessor_var);
+    DEF(TProcessor_constexpr);
     DEF(TProcessor_arg);
+    DEF(TProcessor_asm);
+    DEF(TProcessor_rawasm);
+    DEF(TProcessor_comma);
     DEF(TProcessor_cond);
     DEF(TProcessor_eq);
     DEF(TProcessor_less);
@@ -190,4 +203,20 @@ public:
     Package & get_arg(size_t idx);
     void rebind(deque<TScanner :: TToken> & target);
 };
+
+class TEncoder
+{
+    ofstream fout;
+public:
+    void call(Package func);
+    void bind(const std::string & path);
+    void output_title(const std::string &title);
+    void output(Package rhs);
+    void comma();
+    void nextln();
+    void encode_escchar_output(const std::string & title);
+    void encode_func(TFunction func);
+    void close();
+};
+
 #endif // PENLANG_HPP
